@@ -41,13 +41,11 @@ namespace MagicVilla_VillaAPI.Controllers
             {
                 return BadRequest("Email already exists.");
             }
-
-            // Hash the password
+           
             var passwordHash = HashPassword(userDto.Password);
 
             string role = _db.Users.Any(u => u.Role == "Admin") ? "User" : "Admin";
-
-            // Create a new User entity
+            
             var user = new User
             {
                 Username = userDto.Username,
@@ -55,8 +53,7 @@ namespace MagicVilla_VillaAPI.Controllers
                 PasswordHash = passwordHash,
                 Role = role
             };
-
-            // Add the user to the database
+            
             _db.Users.Add(user);
             _db.SaveChanges();
 
@@ -91,8 +88,7 @@ namespace MagicVilla_VillaAPI.Controllers
         public IActionResult Login(LoginDTO loginDTO)
         {
 
-            var user = _db.Users.FirstOrDefault(u => u.Email == loginDTO.Email);
-            //provjerim da li je korisnik pronadjen u bazi i da li je dobra lozinka
+            var user = _db.Users.FirstOrDefault(u => u.Email == loginDTO.Email);          
             if (user != null && VerifyPassword(loginDTO.Password, user.PasswordHash))
             {
                 var token = TokenHelper.GenerateToken(user, _configuration);
@@ -130,7 +126,7 @@ namespace MagicVilla_VillaAPI.Controllers
         public IActionResult GoogleLogin()
         {
 
-            var properties = new AuthenticationProperties
+            var properties = new AuthenticationProperties //za dodatne informacije prilikom auth i autor
             {
                 RedirectUri = Url.Action("GoogleResponse", "User")
             };
@@ -140,12 +136,12 @@ namespace MagicVilla_VillaAPI.Controllers
         [HttpGet("signin-google/response")]
         public async Task<IActionResult> GoogleResponse()
         {
-            var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme); //AuthenticateAsync pokusava da pronadje i provjeri identitiet korisnika na osnovu cookia
 
             if (!result.Succeeded)
                 return BadRequest($"Authentication failed. Error: {result.Failure?.Message}");
 
-            var userInfo = result.Principal;
+            var userInfo = result.Principal;    //ako je aut uspjesna Principal sadrzi identitet korisnika ukljucujci i njegove claaimove(ime,emial,role..)
             var email = userInfo.FindFirst(ClaimTypes.Email)?.Value;
 
             var user = _db.Users.FirstOrDefault(u => u.Email == email);
